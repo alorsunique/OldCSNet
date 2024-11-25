@@ -2,7 +2,6 @@
 # This code should also copy selected data from the Scopus file to another CSV for faster processing
 # A final complete list should also be generated
 
-
 import os
 import sys
 
@@ -31,39 +30,71 @@ while True:
     except OverflowError:
         max_int = int(max_int / 10)
 
-project_dir = os.getcwd()
 
-scopus_dir = os.path.join(project_dir, "Scopus Files")
-prelim_extract_dir = os.path.join(project_dir, "Preliminary Extracted Info")
+scopus_dir = resources_dir / "Scopus Files"
+preliminary_extract_dir = resources_dir / "Preliminary Extracted Info"
+
 
 # Makes the necessary folders
 if not os.path.exists(scopus_dir):
     os.mkdir(scopus_dir)
 
-if os.path.exists(prelim_extract_dir):
-    shutil.rmtree(prelim_extract_dir)  # Clears the extracted folder
-os.mkdir(prelim_extract_dir)
+if os.path.exists(preliminary_extract_dir):
+    shutil.rmtree(preliminary_extract_dir)  # Clears the extracted folder
+os.mkdir(preliminary_extract_dir)
 
-suffix_merge_term = ["jr", "jr.", "ii", "iii", "iv", "v"]  # Terms that will be merged to the previous entry
+suffix_merge_term_list = ["jr", "jr.", "ii", "iii", "iv", "v"]  # Terms that will be merged to the previous entry
 
 # Creates global database
 
-for file in os.listdir(scopus_dir):
-
-    print(file)
-
-    # Here the CSV file is read and contents are taken
-
-    source_file = os.path.join(scopus_dir, file)
-
-    cur_file = open(source_file, encoding="UTF-8")  # Current file being read
-    file_reader = csv.reader(cur_file)
+for file in scopus_dir.iterdir():
+    print(f"Working: {file}")
+    source_file = file
+    current_file = open(source_file, encoding="UTF-8")  # Current file being read
+    file_reader = csv.reader(current_file)
 
     rows = []
     for row in file_reader:
         rows.append(row)
 
-    cur_file.close()
+    current_file.close()
+
+    # Prepares the institute CSV file
+
+    file_name = file.stem.replace("Scopus","").strip()
+    file_name = f"{file_name} Extract.csv"
+
+    file_path = preliminary_extract_dir / file_name
+
+    # Creates the CSV object
+    creator = open(file_path, "x", encoding="UTF-8")
+    creator.close()
+
+    # Indexes of info to be taken
+
+    authors_index = rows[0].index('\ufeffAuthors')
+    title_index = rows[0].index('Title')
+    year_index = rows[0].index('Year')
+    author_affi_index = rows[0].index('Authors with affiliations')
+
+    count = 1
+
+for file in os.listdir(scopus_dir):
+
+    print(f"Working: {file}")
+
+    # Here the CSV file is read and contents are taken
+
+    source_file = os.path.join(scopus_dir, file)
+
+    current_file = open(source_file, encoding="UTF-8")  # Current file being read
+    file_reader = csv.reader(current_file)
+
+    rows = []
+    for row in file_reader:
+        rows.append(row)
+
+    current_file.close()
 
     # Prepares the institute CSV file
 
@@ -71,7 +102,7 @@ for file in os.listdir(scopus_dir):
     filename = filename.strip()
     filename = f"{filename} Extract.csv"
 
-    filepath = os.path.join(prelim_extract_dir, filename)
+    filepath = os.path.join(preliminary_extract_dir, filename)
 
     # Creates the CSV object
     creator = open(filepath, "x", encoding="UTF-8")
@@ -108,7 +139,7 @@ for file in os.listdir(scopus_dir):
 
         while name_count < len(pre_clean_list):
             try:
-                if pre_clean_list[name_count + 1] in suffix_merge_term:
+                if pre_clean_list[name_count + 1] in suffix_merge_term_list:
                     if pre_clean_list[name_count + 1] == "jr.":
                         name_append = f"{pre_clean_list[name_count]} jr"
                     else:
@@ -123,7 +154,7 @@ for file in os.listdir(scopus_dir):
 
                     clean_list.append(name_append)
             except:
-                if pre_clean_list[name_count] not in suffix_merge_term:
+                if pre_clean_list[name_count] not in suffix_merge_term_list:
                     name_append = pre_clean_list[name_count]
                     name_count += 1
 
